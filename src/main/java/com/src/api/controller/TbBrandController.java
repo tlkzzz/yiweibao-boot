@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
+import java.sql.Timestamp;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -61,10 +63,14 @@ public class TbBrandController {
         }
     }
 
+    /**
+     * 删除品牌
+     * @param request
+     * @return
+     */
     @RequestMapping(value="/delBrand")
     @ResponseBody
-    public  ResponseRestful delBrand(HttpServletRequest request
-                      ){
+    public  ResponseRestful delBrand(HttpServletRequest request){
         logger.error("批量删除商品品牌");
         String id = request.getParameter("ids");
         logger.error("id:"+id);
@@ -87,8 +93,92 @@ public class TbBrandController {
         }
     }
 
+    /**
+     * 商品品牌新增
+     * @param request
+     * @param session
+     * @param tbBrand
+     * @return
+     */
+    @RequestMapping(value="/addBrand")
+    @ResponseBody
+    public ResponseRestful add(HttpServletRequest request,HttpSession session,TbBrand tbBrand) {
+        try {
+            logger.error("进入品牌新增");
+            HttpServletRequest httpServletRequest = (HttpServletRequest) request;
+            String TOken = httpServletRequest.getHeader("Authorization");
+            System.out.println(TOken);
+            String name= JWTUtil.getLoginName(TOken);
+            TbCompany tbCompany=  tbCompanyService.findByPhone(name);
+            //当前登录单位
+//			//判断同一单位 类型 品牌不能相同
+//			TbBrand tbBrandOne = new TbBrand();
+//			tbBrandOne.setTbAdduser(tbCompany.getTcId());
+//			tbBrandOne.setTbCategoryId(tbBrand.getTbCategoryId());
+//			tbBrandOne.setTbName(tbBrand.getTbName());
+//			tbBrandOne = tbBrandService.findOne(tbBrandOne);
+//			if(tbBrandOne!=null){
+//				return "102";//同品牌已存在
+//			}
+            //查询是否有相同品牌名称在相同类型下除当前编辑tbId以外
+            TbBrand brand = tbBrandService.findBrandByTcIdAndTbName(tbBrand.getTbCategoryId().toString(),tbBrand.getTbName(),null,tbCompany.getTcId().toString());
+            if(brand != null){
+                return new ResponseRestful(100,"品牌已存在 ",null);
+            }
 
+            tbBrand.setTbAddtime(new Timestamp(new Date().getTime()));
+            tbBrand.setTbAdduser(tbCompany.getTcId());
+            tbBrand.setTbStatus(1);
+            tbBrandService.save(tbBrand);
+            return new ResponseRestful(200,"新增成功 ",null);
+        } catch (Exception e) {
+            logger.error("[brand/add]出错，错误原因："+e.getMessage());
+            e.printStackTrace();
+            return new ResponseRestful(100,"新增失败 ",null);
+        }
+    }
 
+    @RequestMapping(value="/editBrand")
+    @ResponseBody
+    public ResponseRestful edit(HttpServletRequest request,HttpSession session,TbBrand tbBrand) {
+        logger.error("进入商品编辑");
+        try {
+            TbBrand tbBrandById = tbBrandService.findById(tbBrand.getTbId());
+            if(tbBrandById==null){
+                return new ResponseRestful(100,"品牌不存在 ",null);//品牌不存在
+            }
+            HttpServletRequest httpServletRequest = (HttpServletRequest) request;
+            String TOken = httpServletRequest.getHeader("Authorization");
+            System.out.println(TOken);
+            String name= JWTUtil.getLoginName(TOken);
+            TbCompany tbCompany=  tbCompanyService.findByPhone(name);//当前登录单位
+            //如果改变类型 或  改变 品牌名称
+            if(!tbBrandById.getTbCategoryId().equals(tbBrand.getTbCategoryId())||!tbBrandById.getTbName().equals(tbBrand.getTbName())){
+//				TbBrand tbBrandOne = new TbBrand();
+//				tbBrandOne.setTbAdduser(tbCompany.getTcId());
+//				tbBrandOne.setTbCategoryId(tbBrand.getTbCategoryId());
+//				tbBrandOne.setTbName(tbBrand.getTbName());
+//				tbBrandOne = tbBrandService.findOne(tbBrandOne);
+//				if(tbBrandOne!=null){
+//					return "103";//同品牌已存在
+//				}
+                //查询是否有相同品牌名称在相同类型下除当前编辑tbId以外
+                TbBrand brand = tbBrandService.findBrandByTcIdAndTbName(tbBrand.getTbCategoryId().toString(),tbBrand.getTbName(),tbBrand.getTbId().toString(),tbCompany.getTcId().toString());
+                if(brand != null){
+                    return new ResponseRestful(100,"修改失败 ",null);
+                }
+            }
+            tbBrand.setTbAddtime(tbBrandById.getTbAddtime());
+            tbBrand.setTbAdduser(tbBrandById.getTbAdduser());
+            tbBrand.setTbStatus(tbBrandById.getTbStatus());
+            tbBrandService.update(tbBrand);
+            return new ResponseRestful(200,"修改成功 ",null);
+        } catch (Exception e) {
+            logger.error("[brand/edit]出错，错误原因："+e.getMessage());
+            e.printStackTrace();
+            return new ResponseRestful(100,"修改失败 ",null);
+        }
+    }
 
 
 
