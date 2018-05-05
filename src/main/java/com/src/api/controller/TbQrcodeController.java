@@ -21,10 +21,8 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.sql.Timestamp;
+import java.util.*;
 
 @Controller
 @RequestMapping(value="/qrcode")
@@ -39,11 +37,15 @@ public class TbQrcodeController {
     @Resource
     TbProductService tbProductService;
 
-
+    /**
+     * 获取二维码列表
+     * @param request
+     * @param session
+     * @return
+     */
     @RequestMapping(value="/getGrcode")
     @ResponseBody
     public ResponseRestful getGrcode(HttpServletRequest request, HttpSession session) {
-
         try {
             HttpServletRequest httpServletRequest = (HttpServletRequest) request;
             String TOken = httpServletRequest.getHeader("Authorization");
@@ -99,6 +101,13 @@ public class TbQrcodeController {
             return  new ResponseRestful(100,"查询失败",null);
         }
     }
+
+    /**
+     * 删除二维码
+     * @param request
+     * @param session
+     * @return
+     */
     @RequestMapping(value="/delQrcode")
     @ResponseBody
     public ResponseRestful delQrcode(HttpServletRequest request,HttpSession session) {
@@ -120,4 +129,122 @@ public class TbQrcodeController {
             return new ResponseRestful(100,"删除失败",null);
         }
     }
+
+    /**
+     * 修改二维码
+     * @param request
+     * @param session
+     * @param id
+     * @param type
+     * @return
+     */
+    @RequestMapping(value="/addQrcode")
+    @ResponseBody
+    public ResponseRestful addQrcode(HttpServletRequest request,HttpSession session,String id,String type) {
+        Map<String,Object> map=new HashMap<String,Object>();
+        if(StringUtil.isEmptyNull(id) ||StringUtil.isEmptyNull(type)){
+            return new ResponseRestful(100,"参数提交不完整",map);
+        }
+        HttpServletRequest httpServletRequest = (HttpServletRequest) request;
+        String TOken = httpServletRequest.getHeader("Authorization");
+        System.out.println(TOken);
+        String name= JWTUtil.getLoginName(TOken);
+        TbCompany tbCompany=  tbCompanyService.findByPhone(name);//当前登录人
+        logger.error("进入二维码生成");
+        try {
+            int tp = Integer.parseInt(type);
+            List  li = new ArrayList();
+            if(tp==0){//设备
+                String  [] str=id.split(",");
+                for(int i=0;i<str.length;i++){
+                    TbQrcode qr =new TbQrcode();
+                    qr.setSourceid(Long.valueOf(str[i]));
+                    qr.setSourcetype("asset");
+                    qr.setStatus(1);
+                    List<TbQrcode> list = tbQrcodeServiceImpl.search(qr);
+                    if(list.size()!=0){
+                        TbAsset ss =  tbAssetServiceImpl.findById(Long.valueOf(str[i]));
+                        li.add(ss.getName());
+                    }else{
+                        //生成二维码编码
+                        TbQrcode qrcode = new TbQrcode();
+                        //生成6位随机数
+                        int uuid=(int)((Math.random()*9+1)*100000);
+                        qrcode.setStatus(1);
+                        qrcode.setCompanyId(tbCompany.getTcId());
+                        qrcode.setCreateDate(new Timestamp(new Date().getTime()));
+                        qrcode.setCreatePerson(tbCompany.getTcName());
+//                        qrcode.setServicePointsId(Long.valueOf(points));
+                        qrcode.setSourcetype("asset");
+                        qrcode.setSourceid(Long.valueOf(str[i]));
+                        qrcode.setQrcodenum("SB-"+uuid);
+                        tbQrcodeServiceImpl.save(qrcode);
+                    }
+                }
+                if(li.size()==0){
+                    map.put("code",100);
+                    map.put("message", "生成成功");
+//                    return  map;
+
+                }else{
+                    String st="";
+                    for(int k=0;k<li.size();k++){
+                        st+=li.get(k)+",";
+                    }
+                    map.put("code",100);
+                    map.put("message", st+"二维码已存在,其他生成成功");
+//                    return  map;
+
+                }
+            }else if(tp==1){//商品
+                String  [] str=id.split(",");
+                for(int i=0;i<str.length;i++){
+                    TbQrcode qr =new TbQrcode();
+                    qr.setSourceid(Long.valueOf(str[i]));
+                    qr.setSourcetype("product");
+                    qr.setStatus(1);
+                    List<TbQrcode> list = tbQrcodeServiceImpl.search(qr);
+                    if(list.size()!=0){
+                        TbProduct ss =  tbProductService.findById(Long.valueOf(str[i]));
+                        li.add(ss.getTpName());
+                    }else{
+                        //生成二维码编码
+                        TbQrcode qrcode = new TbQrcode();
+                        //生成6位随机数
+                        int uuid=(int)((Math.random()*9+1)*100000);
+                        qrcode.setStatus(1);
+                        qrcode.setCompanyId(tbCompany.getTcId());
+                        qrcode.setCreateDate(new Timestamp(new Date().getTime()));
+                        qrcode.setCreatePerson(tbCompany.getTcName());
+//                        qrcode.setServicePointsId(Long.valueOf(points));
+                        qrcode.setSourcetype("product");
+                        qrcode.setSourceid(Long.valueOf(str[i]));
+                        qrcode.setQrcodenum("SP-"+uuid);
+                        tbQrcodeServiceImpl.save(qrcode);
+                    }
+                }
+                if(li.size()==0){
+                    map.put("code",100);
+                    map.put("message", "生成成功");
+//                    return  map;
+
+                }else{
+                    String st="";
+                    for(int k=0;k<li.size();k++){
+                        st+=li.get(k)+",";
+                    }
+                    map.put("code",100);
+                    map.put("message", st+"二维码已存在,其他生成成功");
+//                    return  map;
+                }
+            }
+            return new ResponseRestful(100,"参数提交不完整",map);
+        } catch (Exception e) {
+            logger.error("[delQrcode/del]出错，错误原因："+e.getMessage());
+            e.printStackTrace();
+            map.put("code",101);
+            return new ResponseRestful(100,"参数提交不完整",map);
+        }
+    }
+
 }

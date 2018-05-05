@@ -37,12 +37,9 @@ public class TbCompanyController {
         String name= JWTUtil.getLoginName(TOken);
         TbCompany tbCompany=  tbCompanyService.findByPhone(name);
 
-
-
         return new ResponseRestful(200,"查询成功",tbCompany);
 
     }
-
 
     /**
      * 编辑单位信息

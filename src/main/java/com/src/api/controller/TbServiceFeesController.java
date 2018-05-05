@@ -183,6 +183,35 @@ public class TbServiceFeesController {
         }
     }
 
-
+    /**
+     * 售后套餐状态的改变
+     * @param request
+     * @param session
+     * @return
+     */
+    @RequestMapping(value="/updateStatus")
+    @ResponseBody
+    public  ResponseRestful updateStatus(HttpServletRequest request,HttpSession session){
+        logger.error("售后套餐状态的改变");
+        String tsfId = request.getParameter("ids");
+        logger.error("tsfId:"+tsfId);
+        try {
+            TbServiceFees tbServiceFeesById = tbServiceFeesService.findById(Long.valueOf(tsfId));
+            if(tbServiceFeesById==null){
+                return new ResponseRestful(100,"套餐不存在 ",null);//套餐不存在
+            }
+            if(tbServiceFeesById.getTsfStatus()==1){//如果正常/使用
+                tbServiceFeesById.setTsfStatus(2);//改为暂停/停用
+            }else{//否则反之
+                tbServiceFeesById.setTsfStatus(1);
+            }
+            tbServiceFeesService.update(tbServiceFeesById);
+            return new ResponseRestful(200,"套餐状态更改成功",null);
+        } catch (Exception e) {
+            logger.error("[serviceFees/updateStatus]出错，错误原因："+e.getMessage());
+            e.printStackTrace();
+            return new ResponseRestful(100,"更改失败",null);
+        }
+    }
 
 }
