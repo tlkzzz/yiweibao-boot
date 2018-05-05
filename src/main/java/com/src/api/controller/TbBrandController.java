@@ -30,7 +30,6 @@ public class TbBrandController {
     TbBrandService tbBrandService;
 
 
-
     /**
      * 商品品牌列表
      * @param request
