@@ -35,6 +35,8 @@ public class PublicUploadController {
         String url = "/upload/image/";
 
 
+
+
         // 设置响应给前台内容的数据格式
         response.setContentType("text/plain; charset=UTF-8");
         // 设置响应给前台内容的PrintWriter对象
