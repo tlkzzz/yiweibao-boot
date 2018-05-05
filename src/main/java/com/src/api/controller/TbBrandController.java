@@ -68,6 +68,10 @@ public class TbBrandController {
         }
     }
 
+
+
+
+
     /**
      * 删除品牌
      * @param request
@@ -97,6 +101,8 @@ public class TbBrandController {
             return new ResponseRestful(100,"删除失败 ",null);
         }
     }
+//
+
 
     /**
      * 商品品牌新增
