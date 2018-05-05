@@ -2,8 +2,10 @@ package com.src.api.controller;
 
 
 import com.src.api.entity.TbBrand;
+import com.src.api.entity.TbCategory;
 import com.src.api.entity.TbCompany;
 import com.src.api.service.TbBrandService;
+import com.src.api.service.TbCategoryService;
 import com.src.api.service.TbCompanyService;
 import com.src.common.shiro.config.JWTUtil;
 import com.src.common.shiro.config.ResponseRestful;
@@ -19,6 +21,7 @@ import javax.servlet.http.HttpSession;
 import java.sql.Timestamp;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -30,6 +33,8 @@ public class TbBrandController {
     TbCompanyService tbCompanyService;
     @Resource
     TbBrandService tbBrandService;
+    @Resource
+    TbCategoryService tbCategoryService;
 
 
     /**
@@ -180,6 +185,51 @@ public class TbBrandController {
         }
     }
 
+    /**
+     * 商品类型列表ajax
+     * @param request
+     * @param session
+     * @return
+     */
+    @RequestMapping(value="/categorylist.ajax")
+    @ResponseBody
+    public  ResponseRestful categorylist(HttpServletRequest request,HttpSession session){
+        logger.error("商品类型列表ajax");
+        try {
+            HttpServletRequest httpServletRequest = (HttpServletRequest) request;
+            String TOken = httpServletRequest.getHeader("Authorization");
+            System.out.println(TOken);
+            String name= JWTUtil.getLoginName(TOken);
+            TbCompany tbCompany=  tbCompanyService.findByPhone(name);//登录的单位信息
+            List<TbCategory> list =tbCategoryService.findList(tbCompany.getTcId());
+            return new ResponseRestful(200,"查询成功 ",list);
+        } catch (Exception e) {
+            logger.error("[brand/categorylist.ajax]出错，错误原因："+e.getMessage());
+            e.printStackTrace();
+            return new ResponseRestful(100,"查询失败 ",null);
+        }
+    }
+
+    /**
+     * 商品品牌列表ajax
+     * @param request
+     * @param session
+     * @return
+     */
+    @RequestMapping(value="/brandList.ajax")
+    @ResponseBody
+    public  ResponseRestful brandList(HttpServletRequest request,HttpSession session){
+        logger.error("商品品牌列表ajax");
+        String tcId=	request.getParameter("ids");
+        try {
+            List<TbBrand> list=tbBrandService.findList(Long.valueOf(tcId));
+            return new ResponseRestful(200,"查询成功 ",list);
+        } catch (Exception e) {
+            logger.error("[brand/categorylist.ajax]出错，错误原因："+e.getMessage());
+            e.printStackTrace();
+            return new ResponseRestful(100,"查询失败 ",null);
+        }
+    }
 
 
 }

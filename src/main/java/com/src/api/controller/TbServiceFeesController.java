@@ -15,6 +15,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
+import java.sql.Timestamp;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -88,4 +91,98 @@ public class TbServiceFeesController {
             return new ResponseRestful(100,"删除失败 ",null);
         }
     }
+
+    /**
+     * 新增套餐
+     * @param request
+     * @param session
+     * @param tbServiceFees
+     * @return
+     */
+    @RequestMapping(value="/addServiceFees")
+    @ResponseBody
+    public ResponseRestful addServiceFees(HttpServletRequest request, HttpSession session, TbServiceFees tbServiceFees) {
+        try {
+            HttpServletRequest httpServletRequest = (HttpServletRequest) request;
+            String TOken = httpServletRequest.getHeader("Authorization");
+            System.out.println(TOken);
+            String name= JWTUtil.getLoginName(TOken);
+            TbCompany tbCompany=  tbCompanyService.findByPhone(name);
+            //登录的单位信息
+//			TbServiceFees tbServiceFeesOne = new TbServiceFees();
+//			tbServiceFeesOne.setTsfCompanyId(tbCompany.getTcId());
+//			tbServiceFeesOne.setTsfName(tbServiceFees.getTsfName());
+//			tbServiceFeesOne = tbServiceFeesService.findOne(tbServiceFeesOne);
+//			if(tbServiceFeesOne!=null){
+//				return "102";//套餐名称已存在
+//			}
+            //验证售后套餐套餐名称是否重复
+            TbServiceFees fees = tbServiceFeesService.findByNameAndFeesId(tbServiceFees.getTsfName(),null,tbCompany.getTcId().toString());
+            if(fees != null){
+                return new ResponseRestful(100,"套餐名称已存在",null);
+            }
+            tbServiceFees.setTsfAddDate(new Timestamp(new Date().getTime()));
+            tbServiceFees.setTsfAddPeoper(tbCompany.getTcId());
+            tbServiceFees.setTsfCompanyId(tbCompany.getTcId());
+            tbServiceFees.setTsfStatus(1);//默认状态为正常
+            tbServiceFeesService.save(tbServiceFees);
+            return new ResponseRestful(200,"新增成功",null);
+        } catch (Exception e) {
+            logger.error("[serviceFees/add]出错，错误原因："+e.getMessage());
+            e.printStackTrace();
+            return new ResponseRestful(100,"新增失败",null);
+        }
+    }
+
+    /**
+     * 修改套餐
+     * @param request
+     * @param session
+     * @param tbServiceFees
+     * @return
+     */
+    @RequestMapping(value="/editServiceFees")
+    @ResponseBody
+    public ResponseRestful editServiceFees(HttpServletRequest request,HttpSession session,TbServiceFees tbServiceFees) {
+        try {
+            TbServiceFees tbServiceFeesById = tbServiceFeesService.findById(tbServiceFees.getTsfId());
+            if(tbServiceFeesById==null){
+                return new ResponseRestful(100,"套餐不存在 ",null);//套餐不存在
+            }
+            HttpServletRequest httpServletRequest = (HttpServletRequest) request;
+            String TOken = httpServletRequest.getHeader("Authorization");
+            System.out.println(TOken);
+            String name= JWTUtil.getLoginName(TOken);
+            TbCompany tbCompany=  tbCompanyService.findByPhone(name);
+            //登录的单位信息
+            //运费名称被改变
+            if(!tbServiceFeesById.getTsfName().equals(tbServiceFees.getTsfName())){
+//				TbServiceFees tbServiceFeesOne = new TbServiceFees();
+//				tbServiceFeesOne.setTsfCompanyId(tbCompany.getTcId());
+//				tbServiceFeesOne.setTsfName(tbServiceFees.getTsfName());
+//				tbServiceFeesOne = tbServiceFeesService.findOne(tbServiceFeesOne);
+//				if(tbServiceFeesOne!=null){
+//					return "103";//套餐名称已存在
+//				}
+                //验证售后套餐套餐名称是否重复
+                TbServiceFees fees = tbServiceFeesService.findByNameAndFeesId(tbServiceFeesById.getTsfName(),tbServiceFeesById.getTsfId().toString(),tbCompany.getTcId().toString());
+                if(fees != null){
+                    return new ResponseRestful(100,"套餐名称已存在 ",null);
+                }
+            }
+            tbServiceFees.setTsfAddDate(tbServiceFeesById.getTsfAddDate());
+            tbServiceFees.setTsfAddPeoper(tbServiceFeesById.getTsfAddPeoper());
+            tbServiceFees.setTsfCompanyId(tbServiceFeesById.getTsfCompanyId());
+            tbServiceFees.setTsfStatus(tbServiceFeesById.getTsfStatus());
+            tbServiceFeesService.update(tbServiceFees);
+            return new ResponseRestful(200,"修改成功",null);
+        } catch (Exception e) {
+            logger.error("[serviceFees/edit]出错，错误原因："+e.getMessage());
+            e.printStackTrace();
+            return new ResponseRestful(100,"修改失败",null);
+        }
+    }
+
+
+
 }
