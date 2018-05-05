@@ -21,8 +21,7 @@ import java.util.Random;
 @RequestMapping(value="/upload")
 public class PublicUploadController {
     public String URL="http://static.yiweibao.cn/";
-    //
-//
+
 
     @ResponseBody
     @RequestMapping(value = "/uploadFile")
