@@ -22,6 +22,8 @@ import java.util.Random;
 public class PublicUploadController {
     public String URL="http://static.yiweibao.cn/";
     //
+
+
     @ResponseBody
     @RequestMapping(value = "/uploadFile")
     public ResponseRestful addImage(HttpServletRequest request, HttpServletResponse response) {
