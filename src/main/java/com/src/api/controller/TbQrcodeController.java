@@ -228,6 +228,8 @@ public class TbQrcodeController {
                     map.put("message", "生成成功");
 //                    return  map;
 
+
+
                 }else{
                     String st="";
                     for(int k=0;k<li.size();k++){
