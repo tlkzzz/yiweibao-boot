@@ -7,6 +7,7 @@ import java.util.Map;
 
 import javax.annotation.Resource;
 
+import com.src.api.service.TbAssetService;
 import com.src.common.base.entity.PageBean;
 import com.src.common.utils.StringUtil;
 import com.src.common.utils.hjtech.util.LogTool;
@@ -37,7 +38,8 @@ public class TbServiceOrderServiceImpl extends BaseServiceImpl<TbServiceOrder, L
 	TbServiceOrderDetailService tbServiceOrderDetailService;
 	@Resource
 	TbMessageServicer tbMessageServicer;
-	
+	@Resource
+	TbAssetService tbAssetServiceImpl;
 	@Override
 	public BaseDao<TbServiceOrder, Long> getGenericDao() {
 		// TODO Auto-generated method stub
@@ -168,7 +170,7 @@ public class TbServiceOrderServiceImpl extends BaseServiceImpl<TbServiceOrder, L
 		LogTool.WriteLog("AddDate:"+AddDate);
 		LogTool.WriteLog("AddDateEnd:"+AddDateEnd);
 		StringBuffer sbSql = new StringBuffer();
-		sbSql.append("SELECT tso_id tsoId,tso_number tsoNumber,");
+		sbSql.append("SELECT o.tso_order_status AS tso_order_status, o.tso_good_id AS goodId,o.source_type AS sousrceType, tso_id tsoId,tso_number tsoNumber,");
 //		sbSql.append("(SELECT tc_person FROM tb_customers WHERE ) tmName,");
 		sbSql.append("tc_person tmName,tc_mobile tcMobile,");
 		sbSql.append("(SELECT tp_name FROM tb_product WHERE tp_id = tso_good_id) tpName,");
@@ -177,13 +179,13 @@ public class TbServiceOrderServiceImpl extends BaseServiceImpl<TbServiceOrder, L
 		sbSql.append("(SELECT GROUP_CONCAT(ps.tps_spec_value SEPARATOR ' ') FROM tb_product_spec ps");
 		sbSql.append(",tb_order_detail od2 WHERE ps.tps_sku_id=od2.tod_sku_id AND ");
 		sbSql.append("od2.tod_id=o.tso_order_detail_id ) as tgModel,");
-		sbSql.append("od.tod_spec_json tod_spec_json,");
+//		sbSql.append("od.tod_spec_json tod_spec_json,");
 		sbSql.append("(SELECT pname FROM china_province WHERE pid = tc_prov_id) pname,");
 		sbSql.append("(SELECT cname FROM china_city WHERE cid = tc_city_id) cname,");
 		sbSql.append("(SELECT oname FROM china_county WHERE oid = tc_region_id) oname,");
-		sbSql.append("tc_address tcAddress,IF(od.tod_end_time>now(),0,1) ifOutTime,");
-		sbSql.append("tso_status tsoStatus FROM tb_servcie_order o,tb_customers,tb_order_detail od ");
-		sbSql.append("where tso_status<>0 AND tc_id = o.tso_customer_id AND od.tod_id = o.tso_order_detail_id ");
+		sbSql.append("tc_address tcAddress,");
+		sbSql.append("tso_status tsoStatus FROM tb_servcie_order o,tb_customers ");
+		sbSql.append("where tso_status<>0 AND tc_id = o.tso_customer_id ");
 		if(!StringUtils.isBlank(tsoType)){
 			if(tsoType.equals("2")){
 				sbSql.append(" and tso_type = 2");
@@ -223,38 +225,57 @@ public class TbServiceOrderServiceImpl extends BaseServiceImpl<TbServiceOrder, L
 		if (pageSize == 0) {
 			List<Map<String, Object>> list = tbServiceOrderDao.searchForMap(sbSql.toString(), null);
 			for (Map<String, Object> map : list) {
-			    String specJsonValue = "";
-				//tod_spec_json中截取value的值空格拼接
-				String todSpecJson = map.get("tod_spec_json").toString();
-				//todSpecJson不为空的时候进行以下操作
-				if(!StringUtils.isBlank(todSpecJson)){
-					//示例：    []
-					todSpecJson = todSpecJson.replaceAll(" ", "");//去空格
-					todSpecJson = todSpecJson.replaceAll("\\[", "");
-					todSpecJson = todSpecJson.replaceAll("\\]", "");//{tsName=内存, value=8GB}, {tsName=内存, value=8GB}
-					todSpecJson = todSpecJson.replaceAll("\\{", "");
-					todSpecJson = todSpecJson.replaceAll("\\}", "");
-					todSpecJson = todSpecJson.replaceAll("\"", "");//去掉双引号
-					//tsName=内存, value=8GB, tsName=内存, value=8GB
-					String[] arrTodSpecJson = todSpecJson.split(",");
-					for (int i = 0; i < arrTodSpecJson.length; i++) {
-						//如果是数组第奇数个元素则获取值
-						if(i%2==1){
-							String[] arrSpec = arrTodSpecJson[i].split("=");//value=8GB
-							//如果字符串用逗号分割后数组长度没有变为2则用:分割
-							if(arrSpec.length!=2){
-								arrSpec = arrTodSpecJson[i].split(":");
-							}
-							
-							if(specJsonValue.equals("")){
-								specJsonValue = arrSpec[1];//获取第二个元素
-							}else{
-								specJsonValue = specJsonValue + " " +arrSpec[1];//获取第二个元素用空格隔开
-							}
-						}
+				if(map.get("sousrceType").equals("product")) {//商品
+
+					String specJsonValue = "";
+//					//tod_spec_json中截取value的值空格拼接
+//					String todSpecJson = map.get("tod_spec_json").toString();
+//					//todSpecJson不为空的时候进行以下操作
+//					if(!StringUtils.isBlank(todSpecJson)){
+//						//示例：    []
+//						todSpecJson = todSpecJson.replaceAll(" ", "");//去空格
+//						todSpecJson = todSpecJson.replaceAll("\\[", "");
+//						todSpecJson = todSpecJson.replaceAll("\\]", "");//{tsName=内存, value=8GB}, {tsName=内存, value=8GB}
+//						todSpecJson = todSpecJson.replaceAll("\\{", "");
+//						todSpecJson = todSpecJson.replaceAll("\\}", "");
+//						todSpecJson = todSpecJson.replaceAll("\"", "");//去掉双引号
+//						//tsName=内存, value=8GB, tsName=内存, value=8GB
+//						String[] arrTodSpecJson = todSpecJson.split(",");
+//						for (int i = 0; i < arrTodSpecJson.length; i++) {
+//							//如果是数组第奇数个元素则获取值
+//							if(i%2==1){
+//								String[] arrSpec = arrTodSpecJson[i].split("=");//value=8GB
+//								//如果字符串用逗号分割后数组长度没有变为2则用:分割
+//								if(arrSpec.length!=2){
+//									arrSpec = arrTodSpecJson[i].split(":");
+//								}
+//
+//								if(specJsonValue.equals("")){
+//									specJsonValue = arrSpec[1];//获取第二个元素
+//								}else{
+//									specJsonValue = specJsonValue + " " +arrSpec[1];//获取第二个元素用空格隔开
+//								}
+//							}
+//						}
+//					}
+					map.put("specJsonValue", specJsonValue);//返回商品规格值
+				}else if(map.get("sousrceType").equals("asset")){
+
+					Long goodId=	(Long) map.get("goodId");
+					List<Map<String, Object>> li=this.tbAssetServiceImpl.asseSearch(goodId.toString());
+					if(li.size()!=0){
+//						m.put("assetTypeId",  li.get(0).get("assetTypeId"));
+//						m.put("assetTypeName",  li.get(0).get("assetTypeName"));
+//						m.put("assetId",  li.get(0).get("assetId"));
+						map.put("tpName",  li.get(0).get("assetName"));
+						map.put("tpLogo",  li.get(0).get("pics"));
+//						m.put("simpleName",  li.get(0).get("simpleName"));
+//						m.put("position",  li.get(0).get("position"));
+//						m.put("desp",  li.get(0).get("desp"));
+//						m.put("pics",  li.get(0).get("pics"));
 					}
 				}
-				map.put("specJsonValue", specJsonValue);//返回商品规格值
+
 			}
 			json.put("pageCount", StringUtil.getPageCount(list.size(),pageSize));
 			json.put("total", list.size());
@@ -264,38 +285,49 @@ public class TbServiceOrderServiceImpl extends BaseServiceImpl<TbServiceOrder, L
 			PageBean<Map<String, Object>> pageBean = new PageBean<Map<String, Object>>(page, pageSize);
 			pageBean = tbServiceOrderDao.searchForMap(sbSql.toString(), null, pageBean);
 			for (Map<String, Object> map : pageBean.getList()) {
-				String specJsonValue = "";
-				//tod_spec_json中截取value的值空格拼接([{"tsName":"硬盘","value":"500G"},{"tsName":"cpu","value":"双核"}])
-				String todSpecJson = map.get("tod_spec_json").toString();
-				LogTool.WriteLog("todSpecJson:"+todSpecJson);
-				//todSpecJson不为空的时候进行以下操作
-				if(!StringUtils.isBlank(todSpecJson)){
-					//示例：    []
-					todSpecJson = todSpecJson.replaceAll(" ", "");//去空格
-					todSpecJson = todSpecJson.replaceAll("\\[", "");
-					todSpecJson = todSpecJson.replaceAll("\\]", "");//{tsName=内存, value=8GB}, {tsName=内存, value=8GB}
-					todSpecJson = todSpecJson.replaceAll("\\{", "");
-					todSpecJson = todSpecJson.replaceAll("\\}", "");
-					todSpecJson = todSpecJson.replaceAll("\"", "");//去掉双引号
-					//tsName=内存, value=8GB, tsName=内存, value=8GB
-					String[] arrTodSpecJson = todSpecJson.split(",");
-					for (int i = 0; i < arrTodSpecJson.length; i++) {
-						//如果是数组第奇数个元素则获取值
-						if(i%2==1){
-							String[] arrSpec = arrTodSpecJson[i].split("=");//value=8GB
-							//如果字符串用逗号分割后数组长度没有变为2则用:分割
-							if(arrSpec.length!=2){
-								arrSpec = arrTodSpecJson[i].split(":");
-							}
-							if(specJsonValue.equals("")){
-								specJsonValue = arrSpec[1];//获取第二个元素
-							}else{
-								specJsonValue = specJsonValue + " " +arrSpec[1];//获取第二个元素用空格隔开
-							}
-						}
+				if(map.get("sousrceType").equals("product")) {//商品
+					String specJsonValue = "";
+//				String todSpecJson = map.get("tod_spec_json").toString();
+//				LogTool.WriteLog("todSpecJson:"+todSpecJson);
+//				if(!StringUtils.isBlank(todSpecJson)){
+//					todSpecJson = todSpecJson.replaceAll(" ", "");//去空格
+//					todSpecJson = todSpecJson.replaceAll("\\[", "");
+//					todSpecJson = todSpecJson.replaceAll("\\]", "");//{tsName=内存, value=8GB}, {tsName=内存, value=8GB}
+//					todSpecJson = todSpecJson.replaceAll("\\{", "");
+//					todSpecJson = todSpecJson.replaceAll("\\}", "");
+//					todSpecJson = todSpecJson.replaceAll("\"", "");//去掉双引号
+//					String[] arrTodSpecJson = todSpecJson.split(",");
+//					for (int i = 0; i < arrTodSpecJson.length; i++) {
+//						if(i%2==1){
+//							String[] arrSpec = arrTodSpecJson[i].split("=");//value=8GB
+//							if(arrSpec.length!=2){
+//								arrSpec = arrTodSpecJson[i].split(":");
+//							}
+//							if(specJsonValue.equals("")){
+//								specJsonValue = arrSpec[1];//获取第二个元素
+//							}else{
+//								specJsonValue = specJsonValue + " " +arrSpec[1];//获取第二个元素用空格隔开
+//							}
+//						}
+//					}
+//				}
+				map.put("specJsonValue", specJsonValue);//返回商品规格值
+
+				}else if(map.get("sousrceType").equals("asset")){
+					Long goodId=	(Long) map.get("goodId");
+					List<Map<String, Object>> li=this.tbAssetServiceImpl.asseSearch(goodId.toString());
+					if(li.size()!=0){
+//						m.put("assetTypeId",  li.get(0).get("assetTypeId"));
+//						m.put("assetTypeName",  li.get(0).get("assetTypeName"));
+//						m.put("assetId",  li.get(0).get("assetId"));
+						map.put("tpName",  li.get(0).get("assetName"));
+						map.put("tpLogo",  li.get(0).get("pics"));
+//						m.put("simpleName",  li.get(0).get("simpleName"));
+//						m.put("position",  li.get(0).get("position"));
+//						m.put("desp",  li.get(0).get("desp"));
+//						m.put("pics",  li.get(0).get("pics"));
 					}
 				}
-				map.put("specJsonValue", specJsonValue);//返回商品规格值
 			}
 			json.put("pageCount", StringUtil.getPageCount(pageBean.getRowCount(),pageSize));
 			json.put("total", pageBean.getRowCount());
@@ -412,14 +444,13 @@ public class TbServiceOrderServiceImpl extends BaseServiceImpl<TbServiceOrder, L
 	* Description:  根据工单id查询报修维护明细列表
 	* @param tsoId
 	* @return 
-	* @see com.spring.api.service.TbServiceOrderDetailService#findTbServiceOrderDetail(long)
 	 */
 	@Override
 	public List<Map<String, Object>> findTbServiceOrderDetail(long tsoId,String type) {
 		int type0 = Integer.parseInt(type);
 		type0++;
 		StringBuffer sbSql = new StringBuffer();
-		sbSql.append("SELECT o.tso_id as tsoId,o.tso_number as tsoNumber,o.tso_audio_file as tsoAudioFile,");
+		sbSql.append("SELECT o.tso_good_id AS goodId,o.source_type AS sousrceType,o.tso_order_status AS tsoOrderStatus,  o.tso_id as tsoId,o.tso_number as tsoNumber,o.tso_audio_file as tsoAudioFile,");
 		sbSql.append("o.tso_price tsoPrice,(SELECT SUM(od1.tod_price) FROM tb_order_detail od1 ");
 		sbSql.append("WHERE o.tso_id=od1.tod_head_id AND od1.tod_type='"+type+"') todPrice,");
 		sbSql.append("o.tso_pics_file tsoPicsFile,o.tso_pay_type tsoPayType,");

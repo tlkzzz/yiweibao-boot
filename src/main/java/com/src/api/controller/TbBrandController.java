@@ -8,10 +8,12 @@ import com.src.api.service.TbBrandService;
 import com.src.api.service.TbCategoryService;
 import com.src.api.service.TbCompanyService;
 import com.src.common.shiro.config.JWTUtil;
+import com.src.common.shiro.config.RequestJson;
 import com.src.common.shiro.config.ResponseRestful;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -222,7 +224,7 @@ public class TbBrandController {
      * @param session
      * @return
      */
-    @RequestMapping(value="/brandList.ajax")
+    @RequestMapping(value="/brandList")
     @ResponseBody
     public  ResponseRestful brandList(HttpServletRequest request,HttpSession session){
         logger.error("商品品牌列表ajax");
@@ -236,6 +238,19 @@ public class TbBrandController {
             return new ResponseRestful(100,"查询失败 ",null);
         }
     }
-
+    @RequestMapping(value="/getId",method ={RequestMethod.POST})
+    @ResponseBody
+    public  ResponseRestful getId(HttpServletRequest request, @RequestJson(value = "id") String id){
+        logger.error("商品品牌列表ajax");
+        String tcId=	request.getParameter("ids");
+        try {
+//            List<TbBrand> list=tbBrandService.findList(Long.valueOf(tcId));
+            return new ResponseRestful(200,"查询成功 ",id);
+        } catch (Exception e) {
+            logger.error("[brand/categorylist.ajax]出错，错误原因："+e.getMessage());
+            e.printStackTrace();
+            return new ResponseRestful(100,"查询失败 ",null);
+        }
+    }
 
 }

@@ -23,6 +23,7 @@ public interface TbStatisticsService  {
 	int getTodayComplete(String companyid); //获取今日已完成工单
 	int getTodayNoComplete(String companyid);//获取今日未完成
 	public HashMap<String, Object> list_order_baoxiu_detail(HashMap<String, String> params);
+	public HashMap<String, Object> list_order_baoxiu_details(HashMap<String, String> params);
 	public int getDayOrderCount(String day, String companyid); //获取某一天的报修工单数
 	
 	//获取报修产品排行榜

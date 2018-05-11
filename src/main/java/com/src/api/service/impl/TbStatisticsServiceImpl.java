@@ -132,7 +132,7 @@ public class TbStatisticsServiceImpl implements TbStatisticsService{
 
 		String strOrderNum = params.get("order_num") == null ? "0":params.get("order_num");
 		String strOrderPerson =params.get("order_person") == null ? "0":params.get("order_person");
-		
+
 		String strCompanyId = params.get("company_id") == null ? "0":params.get("company_id");
 		
 		String strStartDate = params.get("AddDate") == null ? "0":params.get("AddDate");
@@ -161,7 +161,9 @@ public class TbStatisticsServiceImpl implements TbStatisticsService{
 		if (strOrderPerson != null && !strOrderPerson.equalsIgnoreCase("")) {
 			sbSql.append(" and tc_person like '%" + strOrderPerson + "%' ");
 		}
-		
+		if (strOrderPerson != null && !strOrderPerson.equalsIgnoreCase("")) {
+			sbSql.append(" and tc_person like '%" + strOrderPerson + "%' ");
+		}
 		
 		if (strStartDate != null && !strStartDate.equalsIgnoreCase("")) {
 			sbSql.append(" AND DATE_FORMAT(tso_add_date,'%Y-%m-%d') >= DATE_FORMAT('"+strStartDate+"','%Y-%m-%d')");
@@ -193,8 +195,94 @@ public class TbStatisticsServiceImpl implements TbStatisticsService{
 		}
 		
 	}
-	
-	
+
+	@Override
+	public HashMap<String, Object> list_order_baoxiu_details(HashMap<String, String> params) {
+
+		HashMap<String, Object> json = new HashMap<String, Object>();
+		int page = params.get("page") == null ? 0 : Integer.parseInt(params.get("page"));
+		int pageSize = params.get("pageSize") == null ? 0 : Integer.parseInt(params.get("pageSize"));
+		int  state =Integer.parseInt(params.get("state"));
+		String strOrderNum = params.get("order_num") == null ? "0":params.get("order_num");
+		String strOrderPerson =params.get("order_person") == null ? "0":params.get("order_person");
+
+		String strCompanyId = params.get("company_id") == null ? "0":params.get("company_id");
+
+		String strStartDate = params.get("AddDate") == null ? "0":params.get("AddDate");
+		String strEndDate  = params.get("AddDateEnd") == null ? "0":params.get("AddDateEnd");
+
+		StringBuffer sbSql = new StringBuffer();
+
+		sbSql.append(" select tso_id, tso_number,tp_name tso_good_name,tc_name,tc_person,");
+		sbSql.append(" (select pname from china_province where pid =tc_prov_id ) as tc_prov, ");
+		sbSql.append(" (select cname from china_city where cid =tc_city_id ) as tc_city, ");
+		sbSql.append(" tc_address,DATE_FORMAT(tso_add_date,'%Y-%m-%d %H:%i:%s') as tso_add_date,tso_status  " +
+				"from tb_servcie_order ,tb_customers ,tb_product ");
+		sbSql.append(" where  tso_customer_id = tc_id  and tso_good_id = tp_id ");
+		sbSql.append(" and tso_company_id = '" + strCompanyId +"'");
+
+
+		List<Object> values = new ArrayList<Object>();
+//		if (params.get("tsoStatus") != null && !params.get("tsoStatus").equalsIgnoreCase("")) {
+//			sbSql.append(" and tso_Status  like  '%" + params.get("tsoStatus")+"%'");
+//		}
+		if ( strOrderNum != null && !strOrderNum.equalsIgnoreCase("")) {
+			sbSql.append(" and tso_number like '%" + strOrderNum + "%'");
+		}
+		if(state==1){//全部
+			sbSql.append(" and  tso_status > 0 ");
+		}else if(state==2){//今天
+			sbSql.append(" and tso_status > 0 and DATE_FORMAT(tso_add_date,'%Y%m%d')  = DATE_FORMAT(now(),'%Y%m%d')  ");
+		}else if(state==3){ //待派工
+			sbSql.append(" and tso_status =1 ");
+		}else if(state==4){//已完成
+			sbSql.append(" and tso_status = 7 ");
+		}else if(state==5){//未完成
+			sbSql.append(" and tso_status in(1,2,3,4,5,6)  ");
+
+		}
+
+
+
+		/* 根据客户名称 */
+//		if (strOrderPerson != null && !strOrderPerson.equalsIgnoreCase("")) {
+//			sbSql.append(" and tc_person like '%" + strOrderPerson + "%' ");
+//		}
+//		if (strOrderPerson != null && !strOrderPerson.equalsIgnoreCase("")) {
+//			sbSql.append(" and tc_person like '%" + strOrderPerson + "%' ");
+//		}
+//
+//		if (strStartDate != null && !strStartDate.equalsIgnoreCase("")) {
+//			sbSql.append(" AND DATE_FORMAT(tso_add_date,'%Y-%m-%d') >= DATE_FORMAT('"+strStartDate+"','%Y-%m-%d')");
+//		}
+//
+//		if (strEndDate!= null && !strEndDate.equalsIgnoreCase("")) {
+//			sbSql.append(" AND DATE_FORMAT(tso_add_date,'%Y-%m-%d') <= DATE_FORMAT('"+strEndDate+"','%Y-%m-%d')");
+//		}
+
+
+		if (pageSize == 0) {
+			List<Map<String, Object>> list = tbServiceOrderDao.searchForMap(sbSql.toString(), values);
+			json.put("total", list.size());
+			json.put("rows", list);
+			return json;
+		} else {
+			PageBean<Map<String, Object>> pageBean = new PageBean<Map<String, Object>>(page, pageSize);
+			if (params.get("orderBy") != null)
+				pageBean.setOrderBy("tso_add_date");
+			if (params.get("orderType") != null)
+				pageBean.setOrderType(params.get("orderType"));
+			pageBean = tbServiceOrderDao.searchForMap(sbSql.toString(), values, pageBean);
+			//	json.put("total", pageBean.getRowCount());
+			json.put("rows", pageBean.getList());
+			json.put("rowcount", pageBean.getRowCount());//符合条件的记录数
+			json.put("pageCount", pageBean.getPageCount());//总页数
+
+			return json;
+		}
+
+	}
+
 	
 	/*
 	 * Name:	getDayOrderCount

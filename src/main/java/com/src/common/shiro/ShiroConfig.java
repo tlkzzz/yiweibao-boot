@@ -60,6 +60,7 @@ public class ShiroConfig {
         Map<String, String> filterRuleMap = new HashMap<>();
         // 所有请求通过我们自己的JWT Filter
         filterRuleMap.put("/login/**", "anon");
+//        filterRuleMap.put("/brand/**", "anon");
 //        filterRuleMap.put("/outlogin", "anon");
         filterRuleMap.put("/**", "jwt");
         // 访问401和404页面不通过我们的Filter

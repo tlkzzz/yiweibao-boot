@@ -114,7 +114,9 @@ public class LoginController {
     @RequestMapping(value = "/signin",method = RequestMethod.POST)
     public ResponseRestful signin(@RequestParam("loginName") String loginName, @RequestParam("password") String password) {
         LOGGER.info("进入singin方法啦");
-
+//        @RequestBody Map<String,Object> map
+//        String u = (String) map.get("loginName");
+//            String p = (String) map.get("password");
         try {
             int ss=9;
             Userinfo userinfo = null;
